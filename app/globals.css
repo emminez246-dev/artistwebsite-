@@ -1,0 +1,110 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: #0A0A0A;
+    --surface: #0D0D0D;
+    --card: #141414;
+    --card-hover: #1A1A1A;
+    --border: #1F1F1F;
+    --border-hover: #2A2A2A;
+    --text: #E0E0E0;
+    --text-muted: #888888;
+    --text-dim: #555555;
+    --accent: #00FF88;
+    --accent-dim: #00CC6A;
+    --accent-glow: rgba(0, 255, 136, 0.15);
+    --danger: #FF4444;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-background text-text antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  ::selection {
+    background: rgba(0, 255, 136, 0.25);
+    color: #fff;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #2A2A2A;
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #3A3A3A;
+  }
+}
+
+@layer components {
+  .neon-glow {
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.15), 0 0 40px rgba(0, 255, 136, 0.08);
+  }
+
+  .neon-text {
+    text-shadow: 0 0 20px rgba(0, 255, 136, 0.4), 0 0 40px rgba(0, 255, 136, 0.2);
+  }
+
+  .card-glass {
+    @apply bg-card/80 backdrop-blur-xl border border-border/50;
+  }
+
+  .hover-lift {
+    @apply transition-all duration-300 hover:-translate-y-0.5 hover:border-accent/20 hover:shadow-lg hover:shadow-accent/5;
+  }
+
+  .btn-primary {
+    @apply px-5 py-2.5 rounded-xl bg-accent text-background font-semibold text-sm
+           hover:bg-accent-dim transition-all duration-200
+           active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-ghost {
+    @apply px-4 py-2 rounded-xl text-text-muted hover:text-text hover:bg-card-hover
+           transition-all duration-200 text-sm font-medium;
+  }
+
+  .input-field {
+    @apply w-full px-4 py-3 rounded-xl bg-surface border border-border text-text
+           placeholder:text-text-dim focus:outline-none focus:border-accent/40
+           focus:ring-1 focus:ring-accent/20 transition-all duration-200;
+  }
+}
+
+/* Live stream engagement overlay: comments float up and fade, hearts pop
+   upward like TikTok/Instagram Live. */
+@keyframes live-comment-float {
+  0% { opacity: 0; transform: translateY(10px); }
+  10% { opacity: 1; transform: translateY(0); }
+  80% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-40px); }
+}
+.live-comment-float {
+  animation: live-comment-float 6s ease-out forwards;
+}
+
+@keyframes live-heart-float {
+  0% { opacity: 0; transform: translate(0, 0) scale(0.6); }
+  15% { opacity: 1; transform: translate(calc(var(--x-offset) * 0.3), -30px) scale(1.1); }
+  100% { opacity: 0; transform: translate(var(--x-offset), -220px) scale(0.9); }
+}
+.live-heart-float {
+  animation: live-heart-float 2.2s ease-in forwards;
+}
