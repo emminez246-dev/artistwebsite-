@@ -1,10 +1,15 @@
 "use client";
 
-function urlBase64ToUint8Array(base64String: string): Uint8Array {
+function urlBase64ToUint8Array(base64String: string): BufferSource {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
   const rawData = atob(base64);
-  return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
+  const bytes = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; i++) bytes[i] = rawData.charCodeAt(i);
+  // Cast needed: TS's dom lib now types Uint8Array as generic over its
+  // buffer, which no longer structurally matches BufferSource even though
+  // it's valid at runtime — this is exactly what broke the Netlify build.
+  return bytes.buffer as BufferSource;
 }
 
 /** True if this browser has an active push subscription right now (not just permission). */
