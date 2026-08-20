@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient, getUser } from "@/lib/supabase-server";
+import { sanitizeInput } from "@/lib/utils";
 
 export async function POST(request: Request) {
   try {
@@ -14,6 +15,7 @@ export async function POST(request: Request) {
     const formData = await request.formData();
     const file = formData.get("file") as File;
     const title = formData.get("title") as string;
+    const videoType = formData.get("type") as string | null;
 
     if (!file) {
       return NextResponse.json({ message: "No file provided" }, { status: 400 });
@@ -76,6 +78,25 @@ export async function POST(request: Request) {
     const thumbnailUrl = isVideo
       ? `${publicUrl}?width=640&height=360&quality=80`
       : publicUrl;
+
+    // For videos specifically, insert the database row here too — using the
+    // same service-role client that just uploaded the file — instead of
+    // leaving a second, separate insert for the browser to do afterward.
+    // That second step was the actual source of the RLS error: it ran with
+    // the browser's authenticated session, which Postgres RLS applies to,
+    // unlike this server route.
+    if (isVideo && title) {
+      const { error: insertError } = await supabase.from("videos").insert({
+        title: sanitizeInput(title),
+        type: videoType || "Music Video",
+        url: publicUrl,
+        thumbnail_url: thumbnailUrl,
+      });
+      if (insertError) {
+        console.error("Video row insert error:", insertError);
+        throw new Error(`Video uploaded but saving its details failed: ${insertError.message}`);
+      }
+    }
 
     return NextResponse.json({
       videoUrl: publicUrl,

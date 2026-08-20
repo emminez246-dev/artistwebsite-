@@ -162,6 +162,7 @@ function UploadVideoTab() {
       const formData = new FormData();
       formData.append("file", file);
       formData.append("title", title);
+      formData.append("type", type);
       setProgress(30);
       if (abortRef.current) return;
 
@@ -171,15 +172,6 @@ function UploadVideoTab() {
         const errorData = await response.json();
         throw new Error(errorData.message || "Upload failed");
       }
-      setProgress(70);
-
-      const { videoUrl, thumbnailUrl } = await response.json();
-      const supabase = createClient();
-      const { error } = await supabase.from("videos").insert({
-        title: sanitizeInput(title), type, url: videoUrl, thumbnail_url: thumbnailUrl,
-      });
-      if (error) throw error;
-
       setProgress(100);
       toast.success("Video uploaded!");
       setTitle(""); setFile(null);
