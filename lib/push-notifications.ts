@@ -24,19 +24,34 @@ export async function getExistingSubscription(): Promise<PushSubscription | null
   }
 }
 
+export type SubscribeResult =
+  | { success: true }
+  | { success: false; reason: "unsupported" | "permission-denied" | "permission-dismissed" | "no-vapid-key" | "server-error" };
+
 /** Registers the service worker, subscribes to push, and saves the subscription server-side. */
-export async function subscribeToPush(): Promise<boolean> {
-  if (typeof window === "undefined") return false;
-  if (!("serviceWorker" in navigator) || !("PushManager" in window)) return false;
+export async function subscribeToPush(): Promise<SubscribeResult> {
+  if (typeof window === "undefined" || !("serviceWorker" in navigator) || !("PushManager" in window)) {
+    return { success: false, reason: "unsupported" };
+  }
 
   const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
   if (!vapidPublicKey) {
     console.error("NEXT_PUBLIC_VAPID_PUBLIC_KEY is not set");
-    return false;
+    return { success: false, reason: "no-vapid-key" };
+  }
+
+  // If a previous attempt was denied, the browser won't show the prompt
+  // again — requestPermission() just silently resolves to "denied". We
+  // detect that up front so the UI can tell the user how to fix it
+  // themselves (site settings), instead of a vague "subscribe failed".
+  if (Notification.permission === "denied") {
+    return { success: false, reason: "permission-denied" };
   }
 
   const permission = await Notification.requestPermission();
-  if (permission !== "granted") return false;
+  if (permission !== "granted") {
+    return { success: false, reason: "permission-dismissed" };
+  }
 
   const registration = await navigator.serviceWorker.register("/sw.js");
   await navigator.serviceWorker.ready;
@@ -60,7 +75,8 @@ export async function subscribeToPush(): Promise<boolean> {
     }),
   });
 
-  return response.ok;
+  if (!response.ok) return { success: false, reason: "server-error" };
+  return { success: true };
 }
 
 /** Unsubscribes this browser both locally and on the server. */
