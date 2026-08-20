@@ -155,7 +155,7 @@ export default function SongsPage() {
   return (
     <div className="min-h-screen bg-black text-white pb-32">
       <Navigation />
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="max-w-4xl mx-auto px-4 pt-4 pb-8">
         <h1 className="text-3xl font-bold mb-8 flex items-center gap-3">
           <Music className="w-8 h-8 text-accent" />
           All Songs

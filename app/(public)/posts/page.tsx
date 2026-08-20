@@ -39,7 +39,7 @@ export default function PostsPage() {
     <div className="min-h-screen bg-background">
       <Navigation />
       <main className="pt-16 pb-12">
-        <div className="max-w-3xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+        <div className="max-w-3xl mx-auto px-4 pt-4 pb-8 sm:px-6 lg:px-8">
           <h1 className="text-3xl font-bold text-text mb-8 flex items-center gap-2">
             <Radio className="w-6 h-6 text-accent" /> Updates
           </h1>

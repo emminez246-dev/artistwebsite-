@@ -5,6 +5,9 @@ import { Toaster } from "react-hot-toast";
 import Script from "next/script";
 import { AudioPlayerProvider } from "@/components/CustomAudioPlayer";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
+import NotificationPrompt from "@/components/NotificationPrompt";
+import JsonLd from "@/components/JsonLd";
+import { SITE_URL, SITE_NAME, SITE_KEYWORDS, SITE_DESCRIPTION } from "@/lib/site";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -13,13 +16,44 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Skarlee — Official Website",
-  description: "Official website. Music, videos, live streams, and exclusive content.",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: `${SITE_NAME} — Official Website`,
+    // Lets every page set its own <title>, e.g. "Song Name — Skarlee",
+    // while still ending in the brand name for consistent search results.
+    template: `%s — ${SITE_NAME}`,
+  },
+  description: SITE_DESCRIPTION,
+  keywords: SITE_KEYWORDS,
+  authors: [{ name: SITE_NAME }],
+  creator: SITE_NAME,
+  publisher: SITE_NAME,
+  alternates: { canonical: "/" },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 },
+  },
+  openGraph: {
+    type: "website",
+    url: SITE_URL,
+    siteName: SITE_NAME,
+    title: `${SITE_NAME} — Official Website`,
+    description: SITE_DESCRIPTION,
+    locale: "en_US",
+    images: [{ url: "/icons/icon-512.png", width: 512, height: 512, alt: SITE_NAME }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${SITE_NAME} — Official Website`,
+    description: SITE_DESCRIPTION,
+    images: ["/icons/icon-512.png"],
+  },
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Skarlee",
+    title: SITE_NAME,
   },
   icons: {
     icon: [
@@ -51,7 +85,25 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className={`${inter.variable} font-inter bg-background text-text min-h-screen`}>
+        <JsonLd
+          data={{
+            "@context": "https://schema.org",
+            "@type": "MusicGroup",
+            name: SITE_NAME,
+            url: SITE_URL,
+            genre: "Afro-fusion",
+            description: SITE_DESCRIPTION,
+            foundingLocation: { "@type": "Place", name: "Uganda" },
+            sameAs: [
+              "https://www.tiktok.com/@thee_skarlee",
+              "https://x.com/thee_skarlee",
+              "https://www.instagram.com/thee_skarlee",
+              "https://www.youtube.com/@thee_skarlee",
+            ],
+          }}
+        />
         <ServiceWorkerRegister />
+        <NotificationPrompt />
         <AudioPlayerProvider>
           {/* Top Ad Banner */}
           <div className="w-full flex justify-center py-2 bg-background">

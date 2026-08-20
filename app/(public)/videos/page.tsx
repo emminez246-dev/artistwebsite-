@@ -2,6 +2,19 @@ import Navigation from "@/components/Navigation";
 import { createServerSupabaseClient } from "@/lib/supabase";
 import Link from "next/link";
 import { Play } from "lucide-react";
+import type { Metadata } from "next";
+import { SITE_NAME, SITE_URL } from "@/lib/site";
+
+export const metadata: Metadata = {
+  title: "Videos",
+  description: `Watch all official music videos, visuals, and behind-the-scenes content from ${SITE_NAME}.`,
+  alternates: { canonical: `${SITE_URL}/videos` },
+  openGraph: {
+    title: `Videos — ${SITE_NAME}`,
+    description: `Watch all official music videos and visuals from ${SITE_NAME}.`,
+    url: `${SITE_URL}/videos`,
+  },
+};
 
 export default async function VideosPage() {
   const supabase = await createServerSupabaseClient();
@@ -11,7 +24,7 @@ export default async function VideosPage() {
     <div className="min-h-screen bg-background">
       <Navigation />
       <main className="pt-16">
-        <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 pt-4 pb-8 sm:px-6 lg:px-8">
           <h1 className="text-3xl font-bold text-text mb-8">Video Library</h1>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {videos?.map((video) => (

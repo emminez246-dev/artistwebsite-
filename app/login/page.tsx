@@ -19,7 +19,12 @@ export default function LoginPage() {
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) toast.error(error.message);
-    else { toast.success("Welcome back!"); router.push("/admin"); router.refresh(); }
+    else {
+      toast.success("Welcome back!");
+      const adminPath = process.env.NEXT_PUBLIC_ADMIN_PATH || "admin";
+      router.push(`/${adminPath}`);
+      router.refresh();
+    }
     setIsLoading(false);
   };
 

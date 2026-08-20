@@ -214,7 +214,8 @@ export function AudioPlayerProvider({ children }: { children: React.ReactNode })
               <button onClick={() => setShowQueue(!showQueue)} className={cn("p-2 rounded-full transition-colors", showQueue ? "text-accent bg-accent/10" : "text-text-dim hover:text-text hover:bg-card-hover")}>
                 <ListMusic className="w-4 h-4" />
               </button>
-              <button onClick={() => { cleanup(); setShowPlayer(false); }} className="p-2 rounded-full text-text-dim hover:text-text hover:bg-card-hover transition-colors">
+              <button onClick={() => { cleanup(); setShowPlayer(false); setCurrentSong(null); setIsPlaying(false); setCurrentTime(0); setDuration(0); setShowQueue(false); }}
+                className="p-2 rounded-full text-text-dim hover:text-text hover:bg-card-hover transition-colors">
                 <X className="w-4 h-4" />
               </button>
             </div>

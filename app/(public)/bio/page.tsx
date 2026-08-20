@@ -1,6 +1,19 @@
 import Navigation from "@/components/Navigation";
 import SocialLinks from "@/components/SocialLinks";
 import { Music, Award, Mail, Calendar, Globe } from "lucide-react";
+import type { Metadata } from "next";
+import { SITE_NAME, SITE_URL } from "@/lib/site";
+
+export const metadata: Metadata = {
+  title: "About",
+  description: `Learn about ${SITE_NAME} — independent musician, producer, and visual artist from Uganda. Bio, achievements, credits, and how to get in touch.`,
+  alternates: { canonical: `${SITE_URL}/bio` },
+  openGraph: {
+    title: `About ${SITE_NAME}`,
+    description: `Independent musician, producer, and visual artist from Uganda.`,
+    url: `${SITE_URL}/bio`,
+  },
+};
 
 const achievements = [
   { year: "2026", title: "Featured in 1hundred", icon: Award },
@@ -19,7 +32,7 @@ export default function BioPage() {
       <Navigation />
       <main className="pt-16">
         {/* Hero Section */}
-        <div className="relative bg-gradient-to-b from-accent/5 to-background pt-16 pb-12 px-4">
+        <div className="relative bg-gradient-to-b from-accent/5 to-background pt-6 pb-12 px-4">
           <div className="max-w-3xl mx-auto text-center">
             <div className="w-32 h-32 mx-auto mb-6 rounded-full bg-gradient-to-br from-accent to-accent-dim p-1">
               <div className="w-full h-full rounded-full bg-card flex items-center justify-center">
