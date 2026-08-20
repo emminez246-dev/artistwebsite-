@@ -39,8 +39,7 @@ export default function PostCard({ post }: { post: Post }) {
   const [likeCount, setLikeCount] = useState(post.likes || 0);
   const [shareCount, setShareCount] = useState(post.shares || 0);
   const [showComments, setShowComments] = useState(false);
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [isLoadingComments, setIsLoadingComments] = useState(false);
+  const [commentCount, setCommentCount] = useState(0);
   const [isDownloading, setIsDownloading] = useState(false);
 
   const supabase = createClient();
@@ -59,32 +58,16 @@ export default function PostCard({ post }: { post: Post }) {
     });
   }, [post.id, post.likes, post.shares]);
 
-  const fetchComments = async () => {
-    if (!showComments) return;
-    setIsLoadingComments(true);
-    const { data } = await supabase
+  // Get an initial comment count for the badge without opening a realtime
+  // subscription — CommentSection owns the live subscription once opened.
+  useEffect(() => {
+    supabase
       .from("comments")
-      .select("*")
+      .select("id", { count: "exact", head: true })
       .eq("target_type", "post")
       .eq("target_id", post.id)
-      .order("created_at", { ascending: false });
-    setComments(data || []);
-    setIsLoadingComments(false);
-  };
-
-  useEffect(() => {
-    fetchComments();
-    const channel = supabase
-      .channel(`comments-post-${post.id}`)
-      .on("postgres_changes", {
-        event: "INSERT",
-        schema: "public",
-        table: "comments",
-        filter: `target_type=eq.post&target_id=eq.${post.id}`,
-      }, (payload) => setComments((prev) => [payload.new as Comment, ...prev]))
-      .subscribe();
-    return () => { channel.unsubscribe(); };
-  }, [post.id, showComments]);
+      .then(({ count }) => setCommentCount(count || 0));
+  }, [post.id]);
 
   const handleLike = async () => {
     // Optimistic update, corrected below by the server's authoritative result.
@@ -141,35 +124,19 @@ export default function PostCard({ post }: { post: Post }) {
     const fontClass = getFontClassName(post.font_family);
 
     if (isImageOnly) {
-      const fit = post.image_fit || "cover";
-      const posX = post.image_pos_x ?? 50;
-      const posY = post.image_pos_y ?? 50;
       return (
         <div className="w-full rounded-t-2xl overflow-hidden bg-card">
-          <img
-            src={post.image_url}
-            alt="Post"
-            loading="lazy"
-            decoding="async"
-            className={`w-full ${fit === "cover" ? "h-64 object-cover" : "h-auto max-h-[500px] object-contain"}`}
-            style={{ objectPosition: `${posX}% ${posY}%` }}
-          />
+          <img src={post.image_url} alt="Post" loading="lazy" decoding="async" className="w-full h-auto block" />
         </div>
       );
     }
 
     if (isWhatsappStatus) {
-      const fit = post.image_fit || "cover";
-      const posX = post.image_pos_x ?? 50;
-      const posY = post.image_pos_y ?? 50;
       return (
-        <div className="relative w-full min-h-[400px] flex items-center justify-center overflow-hidden rounded-t-2xl">
-          <img src={post.image_url} alt="Status" loading="lazy" decoding="async"
-            className={`absolute inset-0 w-full h-full ${fit === "cover" ? "object-cover" : fit === "contain" ? "object-contain" : "object-fill"}`}
-            style={{ objectPosition: `${posX}% ${posY}%` }} />
-          <div className="absolute inset-0 bg-black/30" />
+        <div className="relative w-full flex items-center justify-center overflow-hidden rounded-t-2xl bg-card">
+          <img src={post.image_url} alt="Status" loading="lazy" decoding="async" className="w-full h-auto block" />
           {post.content?.trim() && post.content !== " " && (
-            <div className="relative z-10 px-6 py-4 bg-black/50 rounded-xl backdrop-blur-sm">
+            <div className="absolute bottom-4 left-4 right-4 z-10 px-6 py-4 bg-black/50 rounded-xl backdrop-blur-sm">
               <p className={`text-center break-words font-medium ${fontClass}`} style={{
                 color: post.text_color || "#E0E0E0",
                 fontSize: "clamp(0.875rem, 2.5vw, 1.25rem)", lineHeight: 1.5,
@@ -181,38 +148,24 @@ export default function PostCard({ post }: { post: Post }) {
     }
 
     if (isImageBackground) {
-      const fit = post.image_fit || "cover";
-      const posX = post.image_pos_x ?? 50;
-      const posY = post.image_pos_y ?? 50;
       return (
-        <div className="relative w-full min-h-[280px] flex items-center justify-center p-6 sm:p-10 overflow-hidden rounded-t-2xl">
-          <img src={post.bg_value} alt="Background" loading="lazy" decoding="async"
-            className={`absolute inset-0 w-full h-full ${fit === "cover" ? "object-cover" : fit === "contain" ? "object-contain" : "object-fill"}`}
-            style={{ objectPosition: `${posX}% ${posY}%` }} />
-          <div className="absolute inset-0 bg-black/40" />
-          <p className={`relative z-10 text-center break-words w-full font-medium ${fontClass}`} style={{
-            color: post.text_color || "#E0E0E0",
-            fontSize: "clamp(1rem, 3vw, 1.5rem)", lineHeight: 1.5,
-            textShadow: "0 2px 12px rgba(0,0,0,0.8)",
-          }}>{post.content}</p>
+        <div className="relative w-full flex items-center justify-center rounded-t-2xl bg-card overflow-hidden">
+          <img src={post.bg_value} alt="Background" loading="lazy" decoding="async" className="w-full h-auto block" />
+          <div className="absolute inset-0 bg-black/40 flex items-center justify-center p-6 sm:p-10">
+            <p className={`relative z-10 text-center break-words w-full font-medium ${fontClass}`} style={{
+              color: post.text_color || "#E0E0E0",
+              fontSize: "clamp(1rem, 3vw, 1.5rem)", lineHeight: 1.5,
+              textShadow: "0 2px 12px rgba(0,0,0,0.8)",
+            }}>{post.content}</p>
+          </div>
         </div>
       );
     }
 
     if (isImageAbove) {
-      const fit = post.image_fit || "cover";
-      const posX = post.image_pos_x ?? 50;
-      const posY = post.image_pos_y ?? 50;
       return (
         <div className="w-full rounded-t-2xl overflow-hidden">
-          <img
-            src={post.image_url}
-            alt="Post"
-            loading="lazy"
-            decoding="async"
-            className={`w-full ${fit === "cover" ? "h-48 sm:h-64 object-cover" : "h-auto max-h-64 object-contain"}`}
-            style={{ objectPosition: `${posX}% ${posY}%` }}
-          />
+          <img src={post.image_url} alt="Post" loading="lazy" decoding="async" className="w-full h-auto block" />
           <div className="p-6" style={{ backgroundColor: post.bg_value || "#141414" }}>
             <p className={`text-center break-words font-medium ${fontClass}`} style={{
               color: post.text_color || "#E0E0E0",
@@ -224,9 +177,6 @@ export default function PostCard({ post }: { post: Post }) {
     }
 
     if (isImageBelow) {
-      const fit = post.image_fit || "cover";
-      const posX = post.image_pos_x ?? 50;
-      const posY = post.image_pos_y ?? 50;
       return (
         <div className="w-full rounded-t-2xl overflow-hidden">
           <div className="p-6" style={{ backgroundColor: post.bg_value || "#141414" }}>
@@ -235,14 +185,7 @@ export default function PostCard({ post }: { post: Post }) {
               fontSize: "clamp(0.875rem, 2.5vw, 1.25rem)", lineHeight: 1.5,
             }}>{post.content}</p>
           </div>
-          <img
-            src={post.image_url}
-            alt="Post"
-            loading="lazy"
-            decoding="async"
-            className={`w-full ${fit === "cover" ? "h-48 sm:h-64 object-cover" : "h-auto max-h-64 object-contain"}`}
-            style={{ objectPosition: `${posX}% ${posY}%` }}
-          />
+          <img src={post.image_url} alt="Post" loading="lazy" decoding="async" className="w-full h-auto block" />
         </div>
       );
     }
@@ -276,7 +219,7 @@ export default function PostCard({ post }: { post: Post }) {
           <button onClick={handleCommentToggle}
             className={`flex items-center gap-1.5 text-sm transition-colors ${showComments ? "text-accent" : "text-text-dim hover:text-text"}`}>
             <MessageCircle className="w-4 h-4" />
-            {comments.length > 0 && <span>{comments.length}</span>}
+            {commentCount > 0 && <span>{commentCount}</span>}
           </button>
           <button onClick={handleShare}
             className="flex items-center gap-1.5 text-sm text-text-dim hover:text-text transition-colors">
@@ -300,7 +243,7 @@ export default function PostCard({ post }: { post: Post }) {
               <X className="w-3.5 h-3.5" />
             </button>
           </div>
-          <CommentSection targetType="post" targetId={post.id} />
+          <CommentSection targetType="post" targetId={post.id} onCountChange={setCommentCount} />
         </div>
       )}
     </div>
