@@ -53,9 +53,16 @@ export default function Navigation() {
     
     setIsSubscribing(true);
     try {
-      const ok = await subscribeToPush();
-      if (!ok) {
-        toast.error("Subscribe failed — check notification permission");
+      const result = await subscribeToPush();
+      if (!result.success) {
+        const messages: Record<string, string> = {
+          unsupported: "Notifications not supported in this browser",
+          "no-vapid-key": "Notifications aren't configured yet — try again later",
+          "permission-denied": "Notifications are blocked for this site. Tap the lock icon next to the address bar → Permissions → allow Notifications, then try again.",
+          "permission-dismissed": "You'll need to allow notifications when prompted to subscribe",
+          "server-error": "Couldn't save your subscription — try again in a moment",
+        };
+        toast.error(messages[result.reason] || "Subscribe failed", { duration: 6000 });
         return;
       }
       setIsSubscribed(true);
