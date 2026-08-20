@@ -18,13 +18,13 @@ interface Post {
   font_family: string;
   text_color: string;
   created_at: string;
-  likes?: number;
-  shares?: number;
-  image_url?: string;
-  image_position?: string;
-  image_fit?: string;
-  image_pos_x?: number;
-  image_pos_y?: number;
+  likes ? : number;
+  shares ? : number;
+  image_url ? : string;
+  image_position ? : string;
+  image_fit ? : string;
+  image_pos_x ? : number;
+  image_pos_y ? : number;
 }
 
 interface Comment {
@@ -41,23 +41,23 @@ export default function PostCard({ post }: { post: Post }) {
   const [showComments, setShowComments] = useState(false);
   const [commentCount, setCommentCount] = useState(0);
   const [isDownloading, setIsDownloading] = useState(false);
-
+  
   const supabase = createClient();
-
+  
   // Ask the server whether this device already liked this post, and keep
   // in sync if it's liked/unliked from another tab.
   useEffect(() => {
     setLikeCount(post.likes || 0);
     setShareCount(post.shares || 0);
     fetchLikedSet(supabase, "post", [post.id]).then((set) => setLiked(set.has(post.id)));
-
+    
     return subscribeLikeSync("post", (targetId, newLiked, newCount) => {
       if (targetId !== post.id) return;
       setLiked(newLiked);
       setLikeCount(newCount);
     });
   }, [post.id, post.likes, post.shares]);
-
+  
   // Get an initial comment count for the badge without opening a realtime
   // subscription — CommentSection owns the live subscription once opened.
   useEffect(() => {
@@ -68,13 +68,13 @@ export default function PostCard({ post }: { post: Post }) {
       .eq("target_id", post.id)
       .then(({ count }) => setCommentCount(count || 0));
   }, [post.id]);
-
+  
   const handleLike = async () => {
     // Optimistic update, corrected below by the server's authoritative result.
     const wasLiked = liked;
     setLiked(!wasLiked);
     setLikeCount((c) => Math.max(0, c + (wasLiked ? -1 : 1)));
-
+    
     const result = await toggleLikeRemote(supabase, "post", post.id);
     if (!result) {
       setLiked(wasLiked);
@@ -84,7 +84,7 @@ export default function PostCard({ post }: { post: Post }) {
     setLiked(result.liked);
     setLikeCount(result.likeCount);
   };
-
+  
   const handleShare = async () => {
     const url = `${window.location.origin}/post/${post.id}`;
     try {
@@ -99,9 +99,9 @@ export default function PostCard({ post }: { post: Post }) {
       await supabase.from("posts").update({ shares: newShares }).eq("id", post.id);
     } catch { /* user cancelled */ }
   };
-
+  
   const handleCommentToggle = () => setShowComments((v) => !v);
-
+  
   const handleDownload = async () => {
     if (!post.image_url) return;
     setIsDownloading(true);
@@ -114,7 +114,7 @@ export default function PostCard({ post }: { post: Post }) {
       setIsDownloading(false);
     }
   };
-
+  
   const renderPostContent = () => {
     const isImageBackground = post.bg_type === "image" && post.image_url;
     const isImageAbove = post.image_position === "above" && post.image_url;
@@ -122,7 +122,7 @@ export default function PostCard({ post }: { post: Post }) {
     const isWhatsappStatus = post.image_position === "fullscreen" && post.image_url;
     const isImageOnly = post.image_position === "only" && post.image_url;
     const fontClass = getFontClassName(post.font_family);
-
+    
     if (isImageOnly) {
       return (
         <div className="w-full rounded-t-2xl overflow-hidden bg-card">
@@ -130,7 +130,7 @@ export default function PostCard({ post }: { post: Post }) {
         </div>
       );
     }
-
+    
     if (isWhatsappStatus) {
       return (
         <div className="relative w-full flex items-center justify-center overflow-hidden rounded-t-2xl bg-card">
@@ -146,7 +146,7 @@ export default function PostCard({ post }: { post: Post }) {
         </div>
       );
     }
-
+    
     if (isImageBackground) {
       return (
         <div className="relative w-full flex items-center justify-center rounded-t-2xl bg-card overflow-hidden">
@@ -161,7 +161,7 @@ export default function PostCard({ post }: { post: Post }) {
         </div>
       );
     }
-
+    
     if (isImageAbove) {
       return (
         <div className="w-full rounded-t-2xl overflow-hidden">
@@ -175,7 +175,7 @@ export default function PostCard({ post }: { post: Post }) {
         </div>
       );
     }
-
+    
     if (isImageBelow) {
       return (
         <div className="w-full rounded-t-2xl overflow-hidden">
@@ -189,11 +189,11 @@ export default function PostCard({ post }: { post: Post }) {
         </div>
       );
     }
-
+    
     // Default text-only
     const isLightBg = post.bg_type === "solid" && !post.bg_value?.startsWith("#0") && !post.bg_value?.startsWith("#1");
     const textColor = isLightBg ? "#000000" : (post.text_color || "#E0E0E0");
-
+    
     return (
       <div className="relative w-full min-h-[280px] max-h-[80vh] flex items-center justify-center p-6 sm:p-10 overflow-y-auto rounded-t-2xl"
         style={post.bg_type === "gradient" ? { background: post.bg_value } : { backgroundColor: post.bg_value || "#141414" }}>
@@ -204,7 +204,7 @@ export default function PostCard({ post }: { post: Post }) {
       </div>
     );
   };
-
+  
   return (
     <div className="rounded-2xl bg-card border border-border overflow-hidden">
       {renderPostContent()}

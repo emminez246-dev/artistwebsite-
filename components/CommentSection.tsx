@@ -16,9 +16,10 @@ interface Comment {
 interface CommentSectionProps {
   targetType: string;
   targetId: string;
+  onCountChange?: (count: number) => void;
 }
 
-export default function CommentSection({ targetType, targetId }: CommentSectionProps) {
+export default function CommentSection({ targetType, targetId, onCountChange }: CommentSectionProps) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [authorName, setAuthorName] = useState("");
   const [content, setContent] = useState("");
@@ -29,10 +30,16 @@ export default function CommentSection({ targetType, targetId }: CommentSectionP
 
   useEffect(() => {
     fetchComments();
+    // Channel name is unique to this component instance so it can never
+    // collide with another subscription elsewhere on the same target.
     const channel = supabase
-      .channel(`comments-${targetType}-${targetId}`)
+      .channel(`comments-${targetType}-${targetId}-section`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "comments", filter: `target_type=eq.${targetType}&target_id=eq.${targetId}` },
-        (payload) => setComments((prev) => [payload.new as Comment, ...prev]))
+        (payload) => setComments((prev) => {
+          const next = [payload.new as Comment, ...prev];
+          onCountChange?.(next.length);
+          return next;
+        }))
       .subscribe();
     return () => { channel.unsubscribe(); };
   }, [targetType, targetId]);
@@ -44,6 +51,7 @@ export default function CommentSection({ targetType, targetId }: CommentSectionP
       .eq("target_type", targetType).eq("target_id", targetId)
       .order("created_at", { ascending: false });
     setComments(data || []);
+    onCountChange?.((data || []).length);
     setIsLoading(false);
   };
 
