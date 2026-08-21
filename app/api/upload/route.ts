@@ -14,6 +14,7 @@ export async function POST(request: Request) {
 
     const formData = await request.formData();
     const file = formData.get("file") as File;
+    const thumbnail = formData.get("thumbnail") as File | null;
     const title = formData.get("title") as string;
     const videoType = formData.get("type") as string | null;
 
@@ -74,10 +75,25 @@ export async function POST(request: Request) {
       .from(bucket)
       .getPublicUrl(fileName);
 
-    // Generate thumbnail URL for videos
-    const thumbnailUrl = isVideo
-      ? `${publicUrl}?width=640&height=360&quality=80`
-      : publicUrl;
+    // Real video thumbnails require an actual frame image — Supabase has no
+    // built-in video-to-image transform, so the browser captures one via
+    // <canvas> at upload time (see lib/video-thumbnail.ts) and sends it here
+    // as a second file. Appending resize query params to the video's own
+    // URL (the previous approach) never worked: an <img> tag can't render
+    // an .mp4 no matter what query string is attached to it.
+    let thumbnailUrl: string | null = isVideo ? null : publicUrl;
+    if (isVideo && thumbnail) {
+      const thumbFileName = `thumbnails/${Date.now()}_${Math.random().toString(36).substring(2, 9)}.jpg`;
+      const { error: thumbError } = await supabase.storage
+        .from("images")
+        .upload(thumbFileName, thumbnail, { contentType: "image/jpeg", upsert: false });
+      if (!thumbError) {
+        const { data: { publicUrl: thumbPublicUrl } } = supabase.storage.from("images").getPublicUrl(thumbFileName);
+        thumbnailUrl = thumbPublicUrl;
+      } else {
+        console.error("Thumbnail upload error:", thumbError);
+      }
+    }
 
     // For videos specifically, insert the database row here too — using the
     // same service-role client that just uploaded the file — instead of

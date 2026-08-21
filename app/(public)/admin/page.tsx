@@ -11,6 +11,7 @@ import {
   Check
 } from "lucide-react";
 import { cn, sanitizeInput, formatDuration } from "@/lib/utils";
+import { captureVideoThumbnail } from "@/lib/video-thumbnail";
 import toast from "react-hot-toast";
 
 // Each of these tabs is only needed once the admin actually opens it.
@@ -137,18 +138,46 @@ function UploadVideoTab() {
   const [title, setTitle] = useState("");
   const [type, setType] = useState("Music Video");
   const [file, setFile] = useState<File | null>(null);
+  const [thumbPreview, setThumbPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isCapturingThumb, setIsCapturingThumb] = useState(false);
   const [progress, setProgress] = useState(0);
   const abortRef = useRef(false);
+  const capturedThumbRef = useRef<Blob | null>(null);
 
   const reset = () => {
     abortRef.current = true;
     setTitle("");
     setType("Music Video");
     setFile(null);
+    setThumbPreview(null);
+    capturedThumbRef.current = null;
     setProgress(0);
     setIsUploading(false);
     toast("Upload cancelled");
+  };
+
+  // Grabs a real frame from the video as its thumbnail — Supabase has no
+  // built-in way to turn a video into a preview image, so this happens in
+  // the browser as soon as a file is picked.
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = e.target.files?.[0] || null;
+    setFile(selected);
+    setThumbPreview(null);
+    capturedThumbRef.current = null;
+    if (!selected) return;
+
+    setIsCapturingThumb(true);
+    try {
+      const blob = await captureVideoThumbnail(selected);
+      capturedThumbRef.current = blob;
+      setThumbPreview(URL.createObjectURL(blob));
+    } catch (err) {
+      console.warn("Thumbnail capture failed:", err);
+      toast.error("Couldn't generate a thumbnail — video will upload without a cover image");
+    } finally {
+      setIsCapturingThumb(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -163,6 +192,9 @@ function UploadVideoTab() {
       formData.append("file", file);
       formData.append("title", title);
       formData.append("type", type);
+      if (capturedThumbRef.current) {
+        formData.append("thumbnail", capturedThumbRef.current, "thumbnail.jpg");
+      }
       setProgress(30);
       if (abortRef.current) return;
 
@@ -174,7 +206,7 @@ function UploadVideoTab() {
       }
       setProgress(100);
       toast.success("Video uploaded!");
-      setTitle(""); setFile(null);
+      setTitle(""); setFile(null); setThumbPreview(null); capturedThumbRef.current = null;
     } catch (error: any) {
       if (!abortRef.current) toast.error(error.message || "Upload failed");
     } finally {
@@ -197,17 +229,29 @@ function UploadVideoTab() {
       <div>
         <label className="block text-sm font-medium text-text-muted mb-1.5">Video File (max 100MB)</label>
         <div className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-accent/30 transition-colors">
-          <input type="file" accept="video/*" onChange={(e) => setFile(e.target.files?.[0] || null)} className="hidden" id="video-upload" />
+          <input type="file" accept="video/*" onChange={handleFileChange} className="hidden" id="video-upload" />
           <label htmlFor="video-upload" className="cursor-pointer">
             <Upload className="w-8 h-8 text-text-dim mx-auto mb-2" />
             <p className="text-sm text-text-muted">{file ? file.name : "Click to upload video"}</p>
             <p className="text-xs text-text-dim mt-1">MP4, MOV, WebM up to 100MB</p>
           </label>
         </div>
+        {(isCapturingThumb || thumbPreview) && (
+          <div className="mt-3 flex items-center gap-3">
+            {isCapturingThumb ? (
+              <p className="text-xs text-text-dim">Generating thumbnail...</p>
+            ) : (
+              <>
+                <img src={thumbPreview!} alt="Video thumbnail preview" className="w-24 h-14 object-cover rounded-lg border border-border" />
+                <p className="text-xs text-text-dim">This cover image was generated automatically from the video</p>
+              </>
+            )}
+          </div>
+        )}
       </div>
       {isUploading && <ProgressBar progress={progress} label="Uploading" />}
       <div className="flex gap-3">
-        <button type="submit" disabled={isUploading} className="btn-primary flex-1">
+        <button type="submit" disabled={isUploading || isCapturingThumb} className="btn-primary flex-1">
           {isUploading ? "Uploading..." : "Upload Video"}
         </button>
         {isUploading && (
@@ -626,7 +670,16 @@ function PushNotificationTab() {
       }
 
       const result = await response.json();
-      toast.success(`Notification sent to ${result.sent} of ${result.total} subscribers!`);
+      if (result.failed > 0 && result.failures?.length) {
+        const firstError = result.failures[0];
+        toast.error(
+          `${result.sent}/${result.total} delivered. First failure: [${firstError.statusCode ?? "?"}] ${firstError.message}`,
+          { duration: 8000 }
+        );
+        console.error("Push send failures:", result.failures);
+      } else {
+        toast.success(`Notification sent to ${result.sent} of ${result.total} subscribers!`);
+      }
       setTitle(""); setBody(""); setUrl(""); setImageFile(null);
     } catch (error: any) { toast.error(error.message); }
     finally { setIsSending(false); }

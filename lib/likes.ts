@@ -43,7 +43,12 @@ export async function fetchLikedSet(
   return new Set((data ?? []).map((row: { target_id: string }) => row.target_id));
 }
 
-/** Toggle a like for one item. Returns the authoritative new state from the server. */
+/**
+ * Toggle a like for one item. Returns the authoritative new state from the
+ * server. Routed through our own API (not a direct Supabase RPC call) so
+ * the server can attach a hashed IP for rate-limiting — a signal the
+ * client can't be trusted to self-report accurately.
+ */
 export async function toggleLike(
   supabase: SupabaseClient,
   targetType: LikeTargetType,
@@ -52,30 +57,33 @@ export async function toggleLike(
   const deviceId = getDeviceId();
   if (!deviceId) return null;
 
-  const { data, error } = await supabase
-    .rpc("toggle_like", {
-      p_target_type: targetType,
-      p_target_id: targetId,
-      p_device_id: deviceId,
-    })
-    .single();
+  const response = await fetch("/api/likes/toggle", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ targetType, targetId, deviceId }),
+  });
 
-  if (error || !data) {
-    console.error("toggleLike error:", error);
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    if (response.status === 429) {
+      const { default: toast } = await import("react-hot-toast");
+      toast.error(body?.error || "Too many likes from this network — try again later");
+    }
+    console.error("toggleLike error:", body?.error || response.statusText);
     return null;
   }
 
-  const result = data as { liked: boolean; like_count: number };
+  const result = await response.json();
   const payload: LikeSyncMessage = {
     targetType,
     targetId,
     liked: result.liked,
-    likeCount: result.like_count,
+    likeCount: result.likeCount,
   };
   getChannel()?.postMessage(payload);
   getChannel()?.close();
 
-  return { liked: result.liked, likeCount: result.like_count };
+  return { liked: result.liked, likeCount: result.likeCount };
 }
 
 /**

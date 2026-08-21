@@ -45,14 +45,14 @@ export default function VideoLikeButton({
     <button
       onClick={handleClick}
       className={cn(
-        "flex items-center gap-2 px-4 py-2 rounded-xl border transition-colors",
+        "flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm transition-colors",
         liked
-          ? "bg-accent/20 text-accent border-accent/40"
-          : "bg-accent/10 text-accent border-accent/20 hover:bg-accent/20"
+          ? "bg-accent/10 text-accent border-accent/30"
+          : "bg-surface text-text-dim border-border hover:text-text"
       )}
     >
       <Heart className={cn("w-4 h-4", liked && "fill-current")} />
-      <span className="text-sm font-medium">{likeCount > 0 ? likeCount : "Like"}</span>
+      {likeCount > 0 && <span>{likeCount}</span>}
     </button>
   );
 }

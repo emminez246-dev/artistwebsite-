@@ -2,6 +2,7 @@ import Navigation from "@/components/Navigation";
 import { createServerSupabaseClient } from "@/lib/supabase";
 import Link from "next/link";
 import { Play } from "lucide-react";
+import VideoThumbnail from "@/components/VideoThumbnail";
 import type { Metadata } from "next";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
 
@@ -30,7 +31,7 @@ export default async function VideosPage() {
             {videos?.map((video) => (
               <Link key={video.id} href={`/video/${video.id}`} className="group rounded-2xl bg-card border border-border overflow-hidden hover-lift">
                 <div className="relative aspect-video">
-                  <img src={video.thumbnail_url} alt={video.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" decoding="async" />
+                  <VideoThumbnail src={video.thumbnail_url} alt={video.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <Play className="w-10 h-10 text-accent" />
                   </div>

@@ -32,22 +32,21 @@ export default function VideoActions({
   };
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1.5">
       <ShareButton
         targetType="video"
         targetId={videoId}
         title={title}
         url={typeof window !== "undefined" ? window.location.href : "/"}
         shareCount={shareCount}
-        className="px-3 py-2 rounded-xl bg-surface hover:bg-card-hover"
+        className="px-3 py-1.5 rounded-full bg-surface border border-border hover:text-text"
       />
       <button
         onClick={handleDownload}
         disabled={isDownloading}
-        className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-surface text-text-dim hover:text-text transition-colors disabled:opacity-50"
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface border border-border text-text-dim hover:text-text transition-colors disabled:opacity-50"
       >
         {isDownloading ? <Loader className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-        <span className="text-sm">Download</span>
       </button>
     </div>
   );

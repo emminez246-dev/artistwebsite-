@@ -10,6 +10,7 @@ import PostCard from "@/components/PostCard";
 import { useAudioPlayer } from "@/components/CustomAudioPlayer";
 import toast from "react-hot-toast";
 import { fetchLikedSet, toggleLike as toggleLikeRemote, subscribeLikeSync } from "@/lib/likes";
+import VideoThumbnail from "@/components/VideoThumbnail";
 
 interface Song {
   id: string;
@@ -193,7 +194,7 @@ export default function HomeClient() {
                 {videos.map((video) => (
                   <Link href={`/video/${video.id}`} key={video.id} className="rounded-xl bg-card border border-border overflow-hidden hover-lift block">
                     <div className="relative aspect-video">
-                      <img src={video.thumbnail_url} alt={video.title} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                      <VideoThumbnail src={video.thumbnail_url} alt={video.title} className="w-full h-full object-cover" />
                       <div className="absolute inset-0 flex items-center justify-center bg-black/30">
                         <Play className="w-8 h-8 text-white" />
                       </div>
